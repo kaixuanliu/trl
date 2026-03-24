@@ -44,7 +44,9 @@ from trl.trainer.utils import (
     use_adapter,
 )
 
-from .testing_utils import TrlTestCase, require_peft, require_rich
+from .testing_utils import TrlTestCase, require_peft, require_rich, require_torch_accelerator
+
+from transformers.testing_utils import torch_device
 
 
 if is_peft_available():
@@ -994,6 +996,7 @@ class TestUnsplitPixelValuesByGrid(TrlTestCase):
         assert torch.equal(result["pixel_values"], original)
 
 
+@require_torch_accelerator
 class TestForwardMaskedLogits:
     @pytest.mark.parametrize(
         "model_id",
@@ -1017,7 +1020,7 @@ class TestForwardMaskedLogits:
         ],
     )
     def test_llm(self, model_id):
-        device = torch.device("cuda")
+        device = torch.device(torch_device)
         model = AutoModelForCausalLM.from_pretrained(model_id, dtype="auto", device_map=device)
         input_ids = torch.randint(0, model.config.vocab_size, (2, 8), device=device)
         logits_mask = torch.tensor(
@@ -1067,7 +1070,7 @@ class TestForwardMaskedLogits:
         ],
     )
     def test_vlm(self, model_id):
-        device = torch.device("cuda")
+        device = torch.device(torch_device)
         model = AutoModelForImageTextToText.from_pretrained(model_id, dtype="auto", device_map=device)
         input_ids = torch.randint(0, model.config.text_config.vocab_size, (2, 8), device=device)
         logits_mask = torch.tensor(
