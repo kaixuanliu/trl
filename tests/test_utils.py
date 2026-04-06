@@ -24,6 +24,7 @@ import torch.nn.functional as F
 import transformers
 from packaging.version import Version
 from transformers import AutoModelForCausalLM, AutoModelForImageTextToText
+from transformers.testing_utils import torch_device
 from transformers.utils import is_peft_available
 
 from trl import ModelConfig
@@ -49,8 +50,6 @@ from trl.trainer.utils import (
 )
 
 from .testing_utils import TrlTestCase, require_peft, require_rich, require_torch_accelerator
-
-from transformers.testing_utils import torch_device
 
 
 if is_peft_available():
@@ -1204,6 +1203,7 @@ _CHUNKED_LM_HEAD_MODEL_IDS = [
 ]
 
 
+@require_torch_accelerator
 class TestPatchChunkedLMHead:
     B, S = 4, 16  # batch size, sequence length (including prompt + completion)
     H, V = 32, 128
