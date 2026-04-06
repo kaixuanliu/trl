@@ -1008,12 +1008,11 @@ class TestForwardMaskedLogits:
         ],
     )
     def test_llm(self, model_id):
-        device = torch.device(torch_device)
-        model = AutoModelForCausalLM.from_pretrained(model_id, dtype="auto", device_map=device)
-        input_ids = torch.randint(0, model.config.vocab_size, (2, 8), device=device)
+        model = AutoModelForCausalLM.from_pretrained(model_id, dtype="auto", device_map=torch_device)
+        input_ids = torch.randint(0, model.config.vocab_size, (2, 8), device=torch_device)
         logits_mask = torch.tensor(
             [[1, 1, 0, 0, 1, 0, 1, 0], [0, 1, 1, 0, 0, 1, 0, 1]],
-            device=device,
+            device=torch_device,
         )
 
         full_outputs = model(input_ids=input_ids)
@@ -1054,12 +1053,11 @@ class TestForwardMaskedLogits:
         ],
     )
     def test_vlm(self, model_id):
-        device = torch.device(torch_device)
-        model = AutoModelForImageTextToText.from_pretrained(model_id, dtype="auto", device_map=device)
-        input_ids = torch.randint(0, model.config.text_config.vocab_size, (2, 8), device=device)
+        model = AutoModelForImageTextToText.from_pretrained(model_id, dtype="auto", device_map=torch_device)
+        input_ids = torch.randint(0, model.config.text_config.vocab_size, (2, 8), device=torch_device)
         logits_mask = torch.tensor(
             [[1, 1, 0, 0, 1, 0, 1, 0], [0, 1, 1, 0, 0, 1, 0, 1]],
-            device=device,
+            device=torch_device,
         )
 
         full_outputs = model(input_ids=input_ids)
@@ -1288,15 +1286,14 @@ class TestPatchChunkedLMHead:
     @pytest.mark.parametrize("model_id", _CHUNKED_LM_HEAD_MODEL_IDS)
     @pytest.mark.parametrize("temperature", [1.0, 0.7])
     def test_forward(self, model_id, temperature):
-        device = torch.device("cuda")
-        model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.bfloat16).to(device)
+        model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.bfloat16).to(torch_device)
         if getattr(model.config, "final_logit_softcapping", None) is not None:
             pytest.skip("model uses final_logit_softcapping, not supported by chunked LM head")
         model.eval()
 
         B, S, chunk_size = 2, 8, 32
         torch.manual_seed(42)
-        input_ids = torch.randint(0, model.config.vocab_size, (B, S), device=device)
+        input_ids = torch.randint(0, model.config.vocab_size, (B, S), device=torch_device)
         labels = input_ids.clone()
 
         # Reference: standard forward → shifted logits → logprobs & entropy
@@ -1319,15 +1316,14 @@ class TestPatchChunkedLMHead:
     @pytest.mark.parametrize("model_id", _CHUNKED_LM_HEAD_MODEL_IDS)
     @pytest.mark.parametrize("temperature", [1.0, 0.7])
     def test_backward(self, model_id, temperature):
-        device = torch.device("cuda")
-        model_ref = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.bfloat16).to(device)
+        model_ref = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.bfloat16).to(torch_device)
         if getattr(model_ref.config, "final_logit_softcapping", None) is not None:
             pytest.skip("model uses final_logit_softcapping, not supported by chunked LM head")
         model_chunked = copy.deepcopy(model_ref)
 
         B, S, chunk_size = 2, 8, 32
         torch.manual_seed(42)
-        input_ids = torch.randint(0, model_ref.config.vocab_size, (B, S), device=device)
+        input_ids = torch.randint(0, model_ref.config.vocab_size, (B, S), device=torch_device)
         labels = input_ids.clone()
         shifted_labels = labels[:, 1:]
 
