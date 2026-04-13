@@ -2996,8 +2996,6 @@ class TestGRPOTrainerSlow(TrlTestCase):
             "HuggingFaceTB/SmolVLM-Instruct",  # Only test the smaller model to avoid OOM
         ],
     )
-    @require_kernels
-    @require_ampere_or_newer  # Flash attention 2 requires Ampere or newer GPUs
     @require_bitsandbytes
     @require_peft
     def test_vlm_training(self, model_name):
@@ -3017,29 +3015,17 @@ class TestGRPOTrainerSlow(TrlTestCase):
 
         # Create processor once outside the data generator
         processor = AutoProcessor.from_pretrained(model_name, use_fast=True, padding_side="left")
-        conversation = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image"},
-                    {"type": "text", "text": "What is in the image?"},
-                ],
-            },
-        ]
-        prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
+        prompt = [{"role": "user", "content": "What is in the image?"}]
 
-        def data_gen(num_samples):
-            for _ in range(num_samples):
-                yield {
+        dataset = Dataset.from_list(
+            [
+                {
                     "prompt": prompt,
-                    "image": np.random.uniform(low=0.0, high=255.0, size=(64, 64, 3)).astype(
-                        np.uint8
-                    ),  # Much smaller images
+                    "image": np.random.uniform(low=0.0, high=255.0, size=(64, 64, 3)).astype(np.uint8),
                 }
-
-        dataset = Dataset.from_generator(
-            data_gen, gen_kwargs={"num_samples": 4}, features=Features(image=Image(), prompt=Value(dtype="string"))
-        )
+                for _ in range(4)
+            ],
+        ).cast_column("image", Image())
         # reduce memory requirements as much as possible
         quantization_config = BitsAndBytesConfig(
             load_in_4bit=True,
@@ -3051,7 +3037,7 @@ class TestGRPOTrainerSlow(TrlTestCase):
         model = AutoModelForImageTextToText.from_pretrained(
             model_name,
             attn_implementation="kernels-community/flash-attn2",
-            dtype="float32",
+            dtype="float16",
             device_map=get_kbit_device_map(),
             quantization_config=quantization_config,
         )
