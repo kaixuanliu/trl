@@ -44,7 +44,6 @@ from trl.trainer.utils import get_kbit_device_map
 from .testing_utils import (
     TrlTestCase,
     is_ampere_or_newer,
-    require_ampere_or_newer,
     require_bitsandbytes,
     require_jmespath,
     require_kernels,
@@ -2999,7 +2998,7 @@ class TestGRPOTrainerSlow(TrlTestCase):
     )
     @pytest.mark.skipif(
         not is_ampere_or_newer() and torch_device != "xpu",
-        reason="test requires Ampere or newer GPU, or XPU",
+        reason="Flash attention 2 requires Ampere or newer GPU, or XPU",
     )
     @require_kernels
     @require_bitsandbytes
@@ -3043,7 +3042,7 @@ class TestGRPOTrainerSlow(TrlTestCase):
         model = AutoModelForImageTextToText.from_pretrained(
             model_name,
             attn_implementation="kernels-community/flash-attn2",
-            dtype="float16",
+            dtype="bfloat16",
             device_map=get_kbit_device_map(),
             quantization_config=quantization_config,
         )
