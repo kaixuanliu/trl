@@ -43,6 +43,7 @@ from trl.trainer.utils import get_kbit_device_map
 
 from .testing_utils import (
     TrlTestCase,
+    is_ampere_or_newer,
     require_ampere_or_newer,
     require_bitsandbytes,
     require_jmespath,
@@ -2996,6 +2997,11 @@ class TestGRPOTrainerSlow(TrlTestCase):
             "HuggingFaceTB/SmolVLM-Instruct",  # Only test the smaller model to avoid OOM
         ],
     )
+    @pytest.mark.skipif(
+        not is_ampere_or_newer() and torch_device != "xpu",
+        reason="test requires Ampere or newer GPU, or XPU",
+    )
+    @require_kernels
     @require_bitsandbytes
     @require_peft
     def test_vlm_training(self, model_name):
