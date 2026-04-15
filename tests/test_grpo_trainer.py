@@ -3048,8 +3048,9 @@ class TestGRPOTrainerSlow(TrlTestCase):
         )
 
         def reward_func(prompts, completions, **kwargs):
-            # simple nonsensical reward
-            return [-((len(c) - 25) ** 2) + 100 for c in completions]
+            # Use hash-based reward to ensure different completions get different rewards,
+            # avoiding zero-std advantages which would result in zero loss and no parameter updates.
+            return [float(hash(c[0]["content"]) % 100) for c in completions]
 
         training_args = GRPOConfig(
             output_dir=self.tmp_dir,
