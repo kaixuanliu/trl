@@ -24,7 +24,7 @@ import pytest
 import torch
 import transformers
 from accelerate.utils.memory import release_memory
-from datasets import Dataset, Features, Image, Value, load_dataset
+from datasets import Dataset, Image, load_dataset
 from packaging.version import Version
 from transformers import (
     AutoModelForCausalLM,
